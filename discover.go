@@ -2,33 +2,66 @@ package main
 
 import (
     "fmt"
-    "golang.org/x/net/icmp"
-    "golang.org/x/net/ipv4"
     "log"
     "net"
     "os"
     "time"
+    "flag"
+    "golang.org/x/net/icmp"
+    "golang.org/x/net/ipv4"
+    "io/ioutil"
 )
 
-func main() {
-    // Tracing an IP packet route to www.baidu.com.
+//func main
 
-    const host = "www.baidu.com"
-    ips, err := net.LookupIP(host)
-    if err != nil {
-        log.Fatal(err)
+func main() {
+    // Get input fields
+    var host string
+    flag.StringVar(&host, "host", "", "The host which IP packet route to")
+    var ipGiven string
+    flag.StringVar(&ipGiven, "ip", "", "String type to give the destination IP")
+    var filePath string
+    flag.StringVar(&filePath, "file", "", "File type to give the destination IPs")
+    flag.Parse()
+
+    // If don't know the usage
+    Unargs := flag.Args()
+    for _, value := range Unargs {
+        if( value == "?"){
+            flag.Usage()
+        }
+        log.Fatal("The above is the parameter configuration instructions")
     }
     var dst net.IPAddr
-    for _, ip := range ips {
-        if ip.To4() != nil {
-            dst.IP = ip
-            fmt.Printf("using %v for tracing an IP packet route to %s\n", dst.IP, host)
-            break
+
+    // If host field is not null.
+    if host != "" {
+        ips, err := net.LookupIP(host) // Domain2IP
+        if err != nil {
+            log.Fatal(err)
+        }
+        for _, ip:= range ips{
+            if ip.To4() != nil {
+                dst.IP = ip
+                break
+            }
+        }
+        if dst.IP == nil {
+            log.Fatal("no A record found")
         }
     }
-    if dst.IP == nil {
-        log.Fatal("no A record found")
+
+    if ipGiven != "" {
+        dst.IP = net.ParseIP(ipGiven)
     }
+    if filePath != "" {
+        data, err := ioutil.ReadFile(filePath)
+        if err != nil {
+            log.Fatal("File reading error", err)
+        }
+        dst.IP = net.ParseIP(string(data))
+    }
+    fmt.Println(dst.IP)
 
     c, err := net.ListenPacket("ip4:1", "0.0.0.0") // ICMP for IPv4
     if err != nil {
@@ -99,3 +132,4 @@ func main() {
         }
     }
 }
+
