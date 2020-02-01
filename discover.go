@@ -61,7 +61,7 @@ func main() {
         }
         dst.IP = net.ParseIP(string(data))
     }
-    fmt.Println(dst.IP)
+    fmt.Println(os.Getpid())
 
     c, err := net.ListenPacket("ip4:1", "0.0.0.0") // ICMP for IPv4
     if err != nil {
@@ -80,10 +80,10 @@ func main() {
             Data: []byte("HELLO-R-U-THERE"),
         },
     }
-
+    fmt.Println(wm.Body.(*icmp.Echo))
     rb := make([]byte, 1500)
-    for i := 1; i <= 64; i++ { // up to 64 hops
-        wm.Body.(*icmp.Echo).Seq = i
+    for i := 1; i <= 5; i++ { // up to 64 hops
+        wm.Body.(*icmp.Echo).Seq = i + 65020 * 2
         wb, err := wm.Marshal(nil)
         if err != nil {
             log.Fatal(err)
@@ -114,11 +114,16 @@ func main() {
         if err != nil {
             log.Fatal(err)
         }
-        rtt := time.Since(begin)
 
+        rtt := time.Since(begin)
+        //fmt.Println(rb[34:36])
         // In the real world you need to determine whether the
         // received message is yours using ControlMessage.Src,
         // ControlMessage.Dst, icmp.Echo.ID and icmp.Echo.Seq.
+        fmt.Println(wb)
+        fmt.Println(rb[:n])
+        fmt.Println(rm.Body)
+        //fmt.Println(rb[19:n])
         switch rm.Type {
         case ipv4.ICMPTypeTimeExceeded:
             names, _ := net.LookupAddr(peer.String())
@@ -128,7 +133,7 @@ func main() {
             fmt.Printf("%d\t%v %+v %v\n\t%+v\n", i, peer, names, rtt, cm)
             return
         default:
-            log.Printf("unknown ICMP message: %+v\n", rm)
+            //log.Printf("unknown ICMP message: %+v\n", rm)
         }
     }
 }
