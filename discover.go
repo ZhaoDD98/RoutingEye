@@ -13,13 +13,13 @@ import (
 )
 
 func init() {
-    file := "./" +"mesg"+ ".txt"
+    file := "./" +"mesg"+ ".txt" // Give the logger file path
     logFile, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0766)
     if err != nil {
-            panic(err)
+        panic(err)
     }
     log.SetOutput(logFile)
-    log.SetPrefix("[ICMP_Trace]")
+    log.SetPrefix("[ICMP_Trace]") // Logger header
     log.SetFlags(log.LstdFlags | log.Lshortfile | log.LUTC)
     return
 }
@@ -84,7 +84,7 @@ func main() {
     // If don't know the usage
     Unargs := flag.Args()
     for _, value := range Unargs {
-        if( value == "?"){
+        if( value == "?"){ // Use ? to show the usage of 
             flag.Usage()
         }
         log.Fatal("The above is the parameter configuration instructions")
@@ -98,7 +98,7 @@ func main() {
             log.Fatal(err)
         }
         for _, ip:= range ips{
-            if ip.To4() != nil {
+            if ip.To4() != nil { // Find one ip can be obtained
                 dst.IP = ip
                 break
             }
@@ -109,22 +109,22 @@ func main() {
     }
 
     if ipGiven != "" {
-        dst.IP = net.ParseIP(string(ipGiven))
+        dst.IP = net.ParseIP(string(ipGiven)) // Transfer string type to Addr type
     }
     if filePath != "" {
         data, err := ioutil.ReadFile(filePath)
         if err != nil {
             log.Fatal("File reading error", err)
         }
-        dst.IP = net.ParseIP(string(data))
+        dst.IP = net.ParseIP(string(data)) // Transfer string type to Addr type
     }
     c, err := net.ListenPacket("ip4:1", "0.0.0.0") // ICMP for IPv4
     if err != nil {
         log.Fatal(err)
     }
     defer c.Close()
-    p1 := ipv4.NewPacketConn(c)
-    p2 := ipv4.NewPacketConn(c)
+    p1 := ipv4.NewPacketConn(c) // Add new connection p1
+    p2 := ipv4.NewPacketConn(c) // Add new connection p2
 
     if err := p1.SetControlMessage(ipv4.FlagTTL|ipv4.FlagSrc|ipv4.FlagDst|ipv4.FlagInterface, true); err != nil {
         log.Fatal(err)
@@ -135,64 +135,64 @@ func main() {
     wm := icmp.Message{
         Type: ipv4.ICMPTypeEcho, Code: 0,
         Body: &icmp.Echo{
-            ID:   os.Getpid() & 0xffff,
+            ID:   os.Getpid() & 0xffff, // Use process id to be the ID of package 
             Data: []byte("HELLO-R-U-THERE"),
         },
     }
-    rb := make([]byte, 1500)
-    for i := 1; i <= 20; i++ { // up to 64 hops
-        wm.Body.(*icmp.Echo).Seq = i
-        wb, err := wm.Marshal(nil)
+    rb := make([]byte, 1500) // Response buffer zone
+    for i := 1; i <= 20; i++ { // Up to 64 hops
+        wm.Body.(*icmp.Echo).Seq = i // Set Seq number.
+        wb, err := wm.Marshal(nil) // Read Message from write byte stream
         if err != nil {
             log.Fatal(err)
         }
-        begin := time.Now()
+        begin := time.Now() // Time send package
         var n int
         var cm *ipv4.ControlMessage
         var peer net.Addr
         var errs error
         if i % 2 == 0 {
-            if err := p1.SetTTL(i); err != nil {
+            if err := p1.SetTTL(i); err != nil { //Set TTL(Time To Live) number. Tips : this is used to control the hops to jump
                 log.Fatal(err)
             }
-            if _, err := p1.WriteTo(wb, nil, &dst); err != nil {
+            if _, err := p1.WriteTo(wb, nil, &dst); err != nil { // Send
                 log.Fatal(err)
             }
             if err := p1.SetReadDeadline(time.Now().Add(3 * time.Second)); err != nil {
                 log.Fatal(err)
             }
-            n, cm, peer, errs = p1.ReadFrom(rb)
+            n, cm, peer, errs = p1.ReadFrom(rb) // Read response message from response byte stream
         } else {
-            if err := p2.SetTTL(i); err != nil {
+            if err := p2.SetTTL(i); err != nil { //Set TTL(Time To Live) number. Tips : this is used to control the hops to jump
                 log.Fatal(err)
             }
-            if _, err := p2.WriteTo(wb, nil, &dst); err != nil {
+            if _, err := p2.WriteTo(wb, nil, &dst); err != nil { // Send
                 log.Fatal(err)
             }
-            if err := p2.SetReadDeadline(time.Now().Add(3 * time.Second)); err != nil {
+            if err := p2.SetReadDeadline(time.Now().Add(3 * time.Second)); err != nil { // Read response message from response byte stream
                 log.Fatal(err)
             }
-            n, cm, peer, errs = p2.ReadFrom(rb)
+            n, cm, peer, errs = p2.ReadFrom(rb) // Read response message from response byte stream
         }
         if errs != nil {
-            if err, ok := errs.(net.Error); ok && err.Timeout() {
+            if err, ok := errs.(net.Error); ok && err.Timeout() { // Package time out
                 continue
             }
             log.Fatal(err)
         }
-        rm, err := icmp.ParseMessage(1, rb[:n])
+        rm, err := icmp.ParseMessage(1, rb[:n]) // Response controll Message
         if err != nil {
             log.Fatal(err, cm)
         }
-        rtt := time.Since(begin)
-        pkid := rb[32:34]
-        pkseq := rb[34:36]
+        rtt := time.Since(begin) // Rtt
+        pkid := rb[32:34] // Package id, also the Process id
+        pkseq := rb[34:36] // Package Seq number
         switch rm.Type {
-        case ipv4.ICMPTypeTimeExceeded:
+        case ipv4.ICMPTypeTimeExceeded: // If message type is timeexceeded 
             log.Printf("Got TimeExceeded Mes From %-15v,  Id = %-4v , Seq = %-4v, time = %-4v \n", peer, pkid, pkseq, rtt)
-        case ipv4.ICMPTypeEchoReply:
-            pkid = rb[4:6]
-            pkseq = rb[6:8]
+        case ipv4.ICMPTypeEchoReply: // Package arrive the desination
+            pkid = rb[4:6] // Revalue the pkid, because the information location is different
+            pkseq = rb[6:8] // Revalue the Seq number, because the information location is different
             log.Printf("Got EchoReply    Mes From %-15v,  Id = %-4v , Seq = %-4v, time = %-4v \n", peer, pkid, pkseq, rtt)
             return
         default:
