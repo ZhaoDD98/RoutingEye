@@ -253,7 +253,7 @@ func Format(in string) []string { //按照格式处理输入，返回子网掩�
 
 	} else if flag > 8 && flag <= 16 {
 		j = 0
-		for i := 0; i < BroadcastAddress[2]+1; i++ {
+		for i := 0; i < BroadcastAddress[2]-NetAddress[2]+1; i++ {
 			for j = 0; j < 256; j++ {
 
 				str1 := strconv.Itoa(NetAddress[0])
@@ -261,7 +261,7 @@ func Format(in string) []string { //按照格式处理输入，返回子网掩�
 				str3 := strconv.Itoa(NetAddress[2] + i)
 				if i == 0 && j == 0 {
 					continue
-				} else if i == BroadcastAddress[2] && j == 255 {
+				} else if i == BroadcastAddress[2]-NetAddress[2] && j == 255 {
 					break
 				}
 				str4 := strconv.Itoa(NetAddress[3] + j)
@@ -271,7 +271,7 @@ func Format(in string) []string { //按照格式处理输入，返回子网掩�
 		}
 	} else if flag > 16 && flag <= 24 {
 		j = 0
-		for i := 0; i < BroadcastAddress[1]+1; i++ {
+		for i := 0; i < BroadcastAddress[1]-NetAddress[1]+1; i++ {
 			for j = 0; j < 256; j++ {
 				for k := 0; k < 256; k++ {
 					str1 := strconv.Itoa(NetAddress[0])
@@ -290,7 +290,7 @@ func Format(in string) []string { //按照格式处理输入，返回子网掩�
 		}
 	} else {
 		j = 0
-		for i := 0; i < BroadcastAddress[0]+1; i++ {
+		for i := 0; i < BroadcastAddress[0]-NetAddress[0]+1; i++ {
 			for j = 0; j < 256; j++ {
 				for k := 0; k < 256; k++ {
 					for l := 0; l < 256; l++ {
@@ -311,5 +311,15 @@ func Format(in string) []string { //按照格式处理输入，返回子网掩�
 		}
 	}
 	return ip
+}
 
+func RemoveEmpty(a []string) (str []string) {
+	a_len := len(a)
+	for i := 0; i < a_len; i++ {
+		if (i > 0 && a[i-1] == a[i]) || len(a[i]) == 0 {
+			continue
+		}
+		a = append(a, a[i])
+	}
+	return a
 }

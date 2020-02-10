@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-	//"fmt"
+	"fmt"
     "net"
 	"os"
 	"sync"
@@ -31,8 +31,8 @@ func init() {
 
 func trace(pkid int, seqnum int, ip string, c net.PacketConn) {
     var dst net.IPAddr
-	dst.IP = net.ParseIP(ip)
-	p := ipv4.NewPacketConn(c)
+    dst.IP = net.ParseIP(ip)
+    p := ipv4.NewPacketConn(c)
     if err := p.SetControlMessage(ipv4.FlagTTL|ipv4.FlagSrc|ipv4.FlagDst|ipv4.FlagInterface, true); err != nil {
         log.Fatal(err)
     }
@@ -46,24 +46,23 @@ func trace(pkid int, seqnum int, ip string, c net.PacketConn) {
     rb := make([]byte, 1000) // Response buffer zone
     for i := 1; i <= 35; i++ { // Up to 64 hops
         wm.Body.(*icmp.Echo).Seq = i + seqnum // Set Seq number.
-        wb, err := wm.Marshal(nil) // Read Message from write byte stream
+        wb, err := wm.Marshal(nil)
         if err != nil {
             log.Fatal(err)
         }
         begin := time.Now() // Time send package
-		if err := p.SetTTL(i); err != nil { //Set TTL(Time To Live) number. Tips : this is used to control the hops to jump
-			log.Fatal(err)
-		}
-		if _, err := p.WriteTo(wb, nil, &dst); err != nil { // Send
-			log.Fatal(err)
+	if err := p.SetTTL(i); err != nil { //Set TTL(Time To Live) number. Tips : this is used to control the hops to jump
+		log.Fatal(err)
+	}
+	if _, err := p.WriteTo(wb, nil, &dst); err != nil { // Send
+		log.Fatal(err)
         }
-        
-		//log.Printf("Write one Message %v, %v", i + seqnum, pkid)
-		if err := p.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
-			log.Fatal(err)
+	//log.Priintf("Write one Message %v, %v", i + seqnum, pkid)
+        if err := p.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
+		log.Fatal(err)
         }
         time.Sleep(time.Duration(10) * time.Microsecond)
-		n, cm, peer, errs := p.ReadFrom(rb) // Read response message from response byte stream
+	n, cm, peer, errs := p.ReadFrom(rb) // Read response message from response byte stream
         if errs != nil {
             if err, ok := errs.(net.Error); ok && err.Timeout() { // Package time out
                 continue
@@ -101,8 +100,8 @@ func main() {
     flag.StringVar(&host, "host", "", "The host which IP packet route to")
     var ipGiven string
     flag.StringVar(&ipGiven, "ip", "", "String type to give the destination IP")
-	var ipsGiven string
-	flag.StringVar(&ipsGiven, "ips", "", "String type to give the destination IPs")
+    var ipsGiven string
+    flag.StringVar(&ipsGiven, "ips", "", "String type to give the destination IPs")
 
     flag.Parse()
 
@@ -136,7 +135,8 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
-	defer c.Close()
+fmt.Println("here!")
+    defer c.Close()
     if ipGiven != "" {
 		dst = ipGiven
 		trace(1, 1, dst, c)
@@ -144,7 +144,8 @@ func main() {
     }
 	if ipsGiven != "" {
 		dst = ipsGiven
-		Seg2Ip := funcs.Format(dst)
+               raw:=funcs.Format(dst)
+		Seg2Ip := funcs.RemoveEmpty(raw)
 		wg.Add(len(Seg2Ip))
 		//ch := make(chan string)
 		for i, ip:= range Seg2Ip{
